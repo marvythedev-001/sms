@@ -1,0 +1,141 @@
+{% extends 'result/layout.html' %}
+{% load static %}
+{% block 'main' %}
+
+    <div class="col-xl-12 col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">RESULT CHECKER</h4>
+            </div>
+            <div class="card-body">
+                <div class="basic-form">
+                    <form class="retrievalForm" method="post" action="{% url 'result_checker_output' %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="mb-3 col-md-6">
+                                <label class="form-label">Academic Session</label>
+                                <select name="academic-session" id="inputSession" data="food rice meat" class="default-select form-control wide">
+                                    <option value="" selected>--- SELECT SESSION ---</option>
+                                    {% for sess in sessions %}
+                                    <option value={{sess.id}}>{{sess.name | upper}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div id="termSelectContainer" class="mb-3 col-md-6">
+                                <label class="form-label">Academic Term</label>
+                                <select name="academic-term" id="inputTerm" class="default-select form-control wide">
+                                    <option selected>--- SELECT TERM ---</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3 col-md-4">
+                                <label class="form-label">Class Category</label>
+                                <select name="student-class-category" id="inputClassCategory" class="default-select form-control wide">
+                                    <option selected value="">--- SELECT CLASS CATEGORY ---</option>
+                                    {% for ctg in class_categories %}
+                                    <option value="{{ctg}}">{{ctg|upper}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div id="classSelectContainer" class="mb-3 col-md-4">
+                                <label class="form-label">Class</label>
+                                <select name="student-class" id="inputClass" class="default-select form-control wide">
+                                    <option selected value="">--- SELECT CLASS ---</option>
+                                </select>
+                            </div>
+
+                            <div id="classArmSelectContainer" class="mb-3 col-md-4">
+                                <label class="form-label">Class Arm</label>
+                                <select name="student-class-arm" id="inputClassArm" class="default-select form-control wide">
+                                    <option selected value="">--- SELECT CLASS ARM ---</option>
+                                    <option value=1>RUBY</option>
+                                    <option value=2>TOPAZ</option>
+                                    <option value=3>SILVER</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-end">Check Result</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'accounts/js/jquery.min.js' %}"></script>
+    <script>
+
+        $(document).ready(function(){
+            function sendAjaxCall(changedValue, request, selectIdToAppend, selectId, labelText) {
+                $.ajax({
+                    url: "{% url 'ajax_result_checker' %}",
+                    method: 'GET',
+                    data: {
+                        'changed_value': changedValue,
+                        'request': request
+                    },
+                    success: function(data) {
+                        let status = "Success"
+                        if (data.requested_data) {
+                            let $label = $('<label>', {
+                                text: labelText,
+                                class: 'form-label'    
+                            })
+
+                            /* let $select = $('<select>', {
+                                id: selectId,
+                                class: 'default-select form-control wide'    
+                            }) */
+
+                            let $select = $(selectId)
+
+                            data.requested_data.forEach(term => {
+                                $select.append(
+                                    $('<option>', {
+                                        id: term.id,
+                                        value: term.id,
+                                        text: term.name,
+                                        data: term.arm
+                                    })
+                                )
+                            })
+                            $(selectIdToAppend).empty().append($label)
+                            $(selectIdToAppend).append($select)
+                        }  
+                    }
+                })
+            }
+        
+
+            $('#inputSession').on('change', function () {
+                let selectedSession = $('#inputSession').val()
+                let selectedSessionData = $('#inputSession').attr("data")
+                alert(selectedSessionData)
+                sendAjaxCall(selectedSession, 'term', '#termSelectContainer', '#inputTerm', 'Academic Term')
+            });
+
+            $('#inputTerm').on('change', function () {
+                let selectedTerm = $('#inputSession').val()
+                let selectedTermData = $('#inputSession').attr("data")
+                alert(selectedTerm)
+                // sendAjaxCall(selectedSession, 'term', '#termSelectContainer', '#inputTerm', 'Academic Term')
+            });
+
+            $('#inputClassCategory').on('change', (function () {
+                let selectedCategory = $('#inputClassCategory').val()
+                sendAjaxCall(selectedCategory, 'student_class', '#classSelectContainer', '#inputClass', 'Class')
+            }));
+
+            $('#inputClass').on('change', (function () {
+                alert("Working")
+                let selectedClass = $('#inputClass').val()
+                alert(selectedClass)
+                sendAjaxCall(selectedClass, 'class_arm', '#classArmSelectContainer', 'inputClassArm', 'Class Arm', '--- SELECT CLASS ARM ---')
+            }));
+
+        })
+
+    </script>
+
+{% endblock %}

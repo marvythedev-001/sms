@@ -1,0 +1,18 @@
+.card-use-box-two {
+  text-align: center; }
+  .card-use-box-two .crd-bx-img {
+    position: relative;
+    width: 100%;
+    margin: auto; }
+    .card-use-box-two .crd-bx-img .active {
+      width: 100%;
+      height: 100%;
+      background: #3A9B94;
+      border-radius: 50%;
+      left: 6rem;
+      position: absolute;
+      bottom: 0.4rem; }
+      .card-use-box-two .crd-bx-img .active.deactive {
+        background: #FF5E5E; }
+    .card-use-box-two .crd-bx-img img {
+      border: 7px solid rgba(62, 95, 206, 0.08); }
