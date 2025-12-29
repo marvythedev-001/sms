@@ -1,5 +1,6 @@
 {% extends 'result/layout.html' %}
 {% load static %}
+{% load result_extras %}
 {% block 'main' %}
 
 <div class="col-xl-12 col-lg-12">
@@ -200,12 +201,13 @@
                                 {% endfor %}
                             </ul>
                             <div class="ajax-message">
-
+                                {% comment %} {% for sub in student_class_object.subjects_taught.all %}
+                                {% if forloop.counter == 1 %}class="tab-pane fade show active" {% else %}aria-labelledby="pills-{{sub.sub_code}}-tab" {% endcomment %}
                             </div>
                             
                             <div class="tab-content" id="pills-tabContent">
                                 {% for sub in student_class_object.subjects_taught.all %}
-                                    <div {% if forloop.counter == 1 %}class="tab-pane fade show active" {% else %} class="tab-pane fade show" {% endif %} id="pills-{{sub.sub_code}}" role="tabpanel" aria-labelledby="pills-{{sub.sub_code}}-tab">
+                                    <div class="tab-pane fade show {% if forloop.counter == 1 %} active {% endif %}" id="pills-{{sub.sub_code}}" role="tabpanel" aria-labelledby="pills-{{sub.sub_code}}-tab" >
                                         <div class="table-responsive">
                                             
                                                 <table class="table  card-table border-no success-tbl">
@@ -216,22 +218,22 @@
                                                             <th>2nd Test</th>
                                                             <th>3rd Test</th>
                                                             <th>Examination</th>
-                                                            <th>Grade</th>
                                                             <th>Total</th>
+                                                            <th>Grade</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {% for student in student_list %}
-                                                        
-                                                        <!-- {% for sub_id, res in data.items %}
-                                                        {% for result in results %}
-                                                        {% for subjects, data in result.items %} -->
-                                                        <form class="result-form" method="post" data-student-id="{{student.student.id}}" data-subject-id="{{sub.id}}" data-result-id="{{result.id}}">
+
+                                                        {% with subject_results=results_lookup|get_item:sub.id %}
+                                                        {% with student_result=subject_results|get_item:student.student.id %}
+                                                        {{student_result.result_id}}
+                                                        <form class="result-form" method="post" data-student-id="{{student.student.id}}" data-result-id="{{student_result.result_id}}" data-subject-id="{{sub.id}}">
                                                             {% csrf_token %}
                                                             <tr>
-                                                                <input id="result-id{{forloop.counter}}" name="result-id" type="hidden" value="{{result.id}}" />
-                                                                <input id="subject-id{{forloop.counter}}" name="subject-id" type="hidden" value="{{sub.id}}" />
+                                                                <input id="result-id{{forloop.counter}}" name="result-id" type="hidden" value="{{res_info.result_id}}" />
+                                                                <input id="subject-id{{forloop.counter}}" name="subject-id" type="hidden" value="{{res_info.subject_id}}" />
                                                                 <td>
                                                                     <div class="d-flex align-items-center">
                                                                         <img src="images/contacts/pic1.jpg" class="avatar avatar-xl" alt="">
@@ -241,16 +243,18 @@
                                                                         </div>	
                                                                     </div>
                                                                 </td>
-                                                                {% for key, values in res.items %}
-                                                                <td><input id="{{key}}{{forloop.counter}}" {% if not key == 'total' %}required{% endif %} name="{{key}}" {% if sub.id == sub_id %}value="{{values}}"{% else %}value=""{% endif %} class="form-control" {% if key == 'grade' %} type="text" readonly {% else %}  type="number" {% endif %} min="0.0" {% if key == 'exam' %} max="70.0" {% else %} max="10.0" {% endif %} /></td>
-                                                                {% endfor %}
-                                                                <!-- <td><input id="total_score" name="total_score" readonly {% if sub.id == sub_id %}value="{{result.total_score}}"{% else %}value=""{% endif %} title="{{result.total_score}}" class="form-control" type="number" /></td> -->
+                                                                <td><input name="first-test" type="number" required class="form-control" value="{{student_result.scores.first_test}}" /></td>
+                                                                <td><input name="second-test" type="number" required class="form-control" value="{{student_result.scores.second_test}}" /></td>
+                                                                <td><input name="third-test" type="number" required class="form-control" value="{{student_result.scores.third_test}}" /></td>
+                                                                <td><input name="exam" type="number" required class="form-control" value="{{student_result.scores.exam}}" /></td>
+                                                                <td><input name="total" type="number" readonly class="form-control" value="{{student_result.scores.total}}" /></td>
+                                                                <td><input name="grade" type="text" readonly class="form-control" value="{{student_result.scores.grade}}" /></td>
+                                                                {% comment %} <!-- <td><input id="total_score" name="total_score" readonly {% if sub.id == sub_id %}value="{{result.total_score}}"{% else %}value=""{% endif %} title="{{result.total_score}}" class="form-control" type="number" /></td> --> {% endcomment %}
                                                                 <td><button type="submit" title="{{res.last_updated}}" class="btn btn-primary save-btn" id="button-{{result.id}}">Save</button></td>
                                                             </tr>
                                                         </form>
-                                                        <!-- {% endfor %}
-                                                        {% endfor %}
-                                                        {% endfor %} -->
+                                                        {% endwith %}
+                                                        {% endwith %}
                                                         {% endfor %}
                                                     </tbody>       
                                                 </table>
@@ -343,12 +347,12 @@
                 e.preventDefault();
 
                 const $form = $(this);
-                //const formData = new FormData(this)
+                const formData = new FormData(this)
                 const $btn = $form.find('.save-btn');
 
-                const firstTest = formData.get("1st-test")
-                const secondTest = formData.get("2nd-test")
-                const thirdTest = formData.get("3rd-test")
+                const firstTest = formData.get("first-test")
+                const secondTest = formData.get("second-test")
+                const thirdTest = formData.get("third-test")
                 const exam = formData.get("exam")
                 const payload = {
                     student_id: $form.data('student-id'),

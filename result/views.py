@@ -101,74 +101,81 @@ def result_checker_output_view(request):
         # return HttpResponse(academic_session, academic_term, student_class, student_class_arm, student_class_category)
         results = ResultModel.objects.filter(academic_session=academic_session, term=academic_term, student_class__id=student_class, student_class__arm=student_class_arm)
         student_list = StudentProfileModel.objects.filter(academic_session=academic_session, academic_term=academic_term)
-        for res in results:
-            subjects_result = {
-                int(sub_id): data
-                for sub_res in res.report for sub_id, data in sub_res.items()
-            }
+        # for res in results:
+        #     subjects_result = {
+        #         int(sub_id): data
+        #         for sub_res in res.report for sub_id, data in sub_res.items()
+        #     }
 
-            processed_results.append({
-                'id': res.pk,
-                'student': res.student,
-                'subjects': subjects_result,
-                'total_score': res.total_score,
-                'last_updated': res.last_updated
-            })
+        #     processed_results.append({
+        #         'id': res.pk,
+        #         'student': res.student,
+        #         'subjects': subjects_result,
+        #         'total_score': res.total_score,
+        #         'last_updated': res.last_updated
+        #     })
             
         data_structure = {}
         for result in results:
             real_result = result.report
             for res in real_result:
-                subject_names = list(res.keys())
-                test_values = res[subject_names[0]]
+                subject_idxs = list(res.keys()) #This is subjet_idxs
+                test_values = res[subject_idxs[0]]
+                # return JsonResponse({"data": test_values})
                 # return JsonResponse({"data": test_values})
                 if processed_results_pro:
-                    for pro_res in processed_results_pro:
-                        if pro_res.keys()[0] in subject_names:
-                            processed = pro_res[pro_res.keys()[0]]
-                            subject = SubjectsModel.objects.get(pk=pro_res.keys()[0])
-                            processed[result.student.id] = {
-                                "student_name": f"{result.student.first_name} {result.student.last_name}",
-                                "admission_number": result.student.admission_number,
-                                "subject_id": int(sub_id),
-                                "result_id": result.id,
-                                "scores": {
-                                    "first_test": test_values["1st-test"],
-                                    "second_test": test_values["2nd-test"],
-                                    "third_test": test_values["3rd-test"],
-                                    "exam": test_values["exam"],
-                                    "total": test_values["total"],
-                                    "grade": test_values["grade"],
-                                }
-                            }
-                        else:
-                            for sub_id in subject_names:
-                                subject = SubjectsModel.objects.get(pk=sub_id)
-                                data_structure[subject.name] = {
-                                    result.student.id: {
-                                        "student_name": f"{result.student.first_name} {result.student.last_name}",
-                                        "admission_number": result.student.admission_number,
-                                        "subject_id": int(sub_id),
-                                        "result_id": result.id,
-                                        "scores": {
-                                            "first_test": test_values["1st-test"],
-                                            "second_test": test_values["2nd-test"],
-                                            "third_test": test_values["3rd-test"],
-                                            "exam": test_values["exam"],
-                                            "total": test_values["total"],
-                                            "grade": test_values["grade"],
-                                        }
+                    # return HttpResponse(pro_res.keys())
+                    # subject_names = []
+                    # for idx in subject_idxs:
+                    #     subject_object = SubjectsModel.objects.filter(pk=int(idx)).values("name")
+                    #     subject_object = list(subject_object)
+                    #     subject_names.append(subject_object[0]["name"])
+                        # subject_names.append(list(subject_object))
+                    # return JsonResponse({"data": subject_names})
+                    # result = list(pro_res.keys()) 
+                    proc_subject_names = []
+                    for processed_result in processed_results_pro:
+                        key_list = list(processed_result.keys())
+                        proc_subject_names.append(key_list[0])
+                    # return JsonResponse({"data": res})
+                    subject_id = list(res.keys())
+                    subject_object = SubjectsModel.objects.filter(pk=int(subject_id[0])).values("name")
+                    subject_object = list(subject_object)
+                    subject_name = subject_object[0]["name"]
+                    bool_result = subject_name in proc_subject_names
+                    # return JsonResponse({"data": bool_result})
+                    if subject_name in proc_subject_names:
+                        for idx, processed_result in enumerate(processed_results_pro):
+                            sub_name_list = list(processed_result.keys())
+                            if subject_name == sub_name_list[0]:
+                                
+                                processed = processed_results_pro[idx]
+                                student_result_data = processed[subject_name]
+                                # subject = SubjectsModel.objects.get(pk=pro_res.keys()[0])
+                                student_result_data[result.student.id] = {
+                                    "student_name": f"{result.student.first_name} {result.student.last_name}",
+                                    "admission_number": result.student.admission_number,
+                                    "subject_id": int(subject_id[0]),
+                                    "result_id": result.id,
+                                    "scores": {
+                                        "first_test": test_values["1st-test"],
+                                        "secondtest": test_values["2nd-test"],
+                                        "thirdtest": test_values["3rd-test"],
+                                        "exam": test_values["exam"],
+                                        "total": test_values["total"],
+                                        "grade": test_values["grade"],
                                     }
                                 }
-                                processed_results_pro.append(data_structure)
-                else:
-                    for sub_id in subject_names:
-                        subject = SubjectsModel.objects.get(pk=sub_id)
-                        data_structure[subject.name] = {
+                                break
+                    else:
+                        # for sub_id in subject_names:
+                        # subject = SubjectsModel.objects.get(pk=sub_id)
+                        
+                        data_structure[subject_name] = {
                             result.student.id: {
                                 "student_name": f"{result.student.first_name} {result.student.last_name}",
                                 "admission_number": result.student.admission_number,
-                                "subject_id": int(sub_id),
+                                "subject_id": int(subject_id[0]),
                                 "result_id": result.id,
                                 "scores": {
                                     "first_test": test_values["1st-test"],
@@ -180,8 +187,30 @@ def result_checker_output_view(request):
                                 }
                             }
                         }
-                        processed_results_pro.append(data_structure)
-        return JsonResponse({"data": processed_results_pro})
+                        # processed_results_pro.append(data_structure)
+                        # return JsonResponse({"datas": processed_results_pro})
+                else:
+                    subject = SubjectsModel.objects.get(pk=subject_idxs[0])
+                    # return JsonResponse({"data": "Absent"})
+                    data_structure[subject.name] = {
+                        result.student.id: {
+                            "student_name": f"{result.student.first_name} {result.student.last_name}",
+                            "admission_number": result.student.admission_number,
+                            "subject_id": int(subject.id),
+                            "result_id": result.id,
+                            "scores": {
+                                "first_test": test_values["1st-test"],
+                                "second_test": test_values["2nd-test"],
+                                "third_test": test_values["3rd-test"],
+                                "exam": test_values["exam"],
+                                "total": test_values["total"],
+                                "grade": test_values["grade"],
+                            }
+                        }
+                    }
+                    # return JsonResponse({"data": data_structure})
+                    processed_results_pro.append(data_structure)
+        # return JsonResponse({"data": processed_results_pro})
         [
             {
                 "1": {
@@ -216,10 +245,15 @@ def result_checker_output_view(request):
                             "third_test": "value"
                         }
                     },
-                    ("student_id", "student_name", "admission_number", "student_ing"): {
-                        "first_test": "value",
-                        "second_test": "value",
-                        "third_test": "value"
+                    "student_id": {
+                        "student_name": "value",
+                        "admission_number": "value",
+                        "student_img": "value",
+                        "scores": {
+                            "first_test": "value",
+                            "second_test": "value",
+                            "third_test": "value"
+                        }
                     },
                     ("student_id", "student_name", "admission_number", "student_ing"): {
                         "first_test": "value",
@@ -264,9 +298,30 @@ def result_checker_output_view(request):
     real_academic_term = AcademicTermModel.objects.get(pk=academic_term)
     real_student_class_arm = StudentClassArmModel.objects.get(pk=student_class_arm)
     real_student_class = StudentClassModel.objects.get(pk=student_class)
+    
+    results_lookup = {}
+
+    for result_block in processed_results_pro:  # outer list
+        for subject_name, students_data in result_block.items():
+            for student_id_str, payload in students_data.items():
+                subject_id = payload["subject_id"]
+                student_id = int(student_id_str)
+                
+                if subject_id not in results_lookup:
+                    results_lookup[subject_id] = {}
+
+                results_lookup[subject_id][student_id] = {
+                    "student_name": payload["student_name"],
+                    "admission_number": payload["admission_number"],
+                    "result_id": payload["result_id"],
+                    "scores": payload["scores"],
+            }
+
+    
+    # return JsonResponse({"data": processed_results_pro})
         
     data = {
-        "results": processed_results_pro,
+        "results": processed_results_pro[0] if processed_results_pro else {},
         "num_of_students": num_of_students,
         "sessions": sessions,
         "class_list": class_list,
@@ -276,7 +331,8 @@ def result_checker_output_view(request):
         "academic_session": real_academic_session,
         "academic_term": real_academic_term,
         "student_class": real_student_class,
-        "student_class_arm": real_student_class_arm
+        "student_class_arm": real_student_class_arm,
+        "results_lookup": results_lookup
     }
         
     return render(request, 'result/result_checker_final.html', data)
@@ -301,27 +357,40 @@ def result_update_ajax_view(request):
             total_score = 0
             result = ResultModel.objects.get(pk=result_id)
             result_list = result.report
-            for res in result_list:
+            presence_counter = 0
+            res_index = 0
+            for idx, res in enumerate(result_list):
+                # return JsonResponse({"value": res.__contains__(subject_id)})
                 if res.__contains__(subject_id):
-                    report = res["subject_id"]
-                    report["1st-test"] = first_test
-                    report["2nd-test"] = second_test
-                    report["3rd-test"] = third_test
-                    report["exam"] = exam
-                    total = float(first_test) + float(second_test) + float(third_test) + float(exam)
-                    
-                    report["total"] = total
-                    calc_grade = grade_calculation(total)
-                    report["grade"] = calc_grade
-                    total_score += total
-                    
-                else:
-                    total = float(first_test) + float(second_test) + float(third_test) + float(exam)
-                    calc_grade = grade_calculation(total)
-                    result_stucture = {f"{subject_id}": {"1st-test": f"{first_test}", "2nd-test": f"{second_test}", "3rd-test": f"{third_test}", "exam": exam, "total": total, "grade": calc_grade}}
-                    result.report.append(result_stucture)
-                
+                    presence_counter += 1
+                    res_index += idx
+                    break
+             
+            if presence_counter > 0:
+                report_data = result_list[res_index]
+                # return JsonResponse({"value": report["1st-test"]})
+                report = report_data[subject_id]
+                report["1st-test"] = first_test
+                report["2nd-test"] = second_test
+                report["3rd-test"] = third_test
+                report["exam"] = exam
+                total = float(first_test) + float(second_test) + float(third_test) + float(exam)
+                # return JsonResponse({"value": total})
+                report["total"] = total
+                calc_grade = grade_calculation(total)
+                report["grade"] = calc_grade
+                total_score += total
+                # return JsonResponse({"data": report})
                 result.save()
+                    
+            else:
+                
+                total = float(first_test) + float(second_test) + float(third_test) + float(exam)
+                calc_grade = grade_calculation(total)
+                result_stucture = {f"{subject_id}": {"1st-test": f"{first_test}", "2nd-test": f"{second_test}", "3rd-test": f"{third_test}", "exam": exam, "total": total, "grade": calc_grade}}
+                result.report.append(result_stucture)
+                result.save()
+                
         else:
             student = StudentModel.objects.get(pk=student_id)
             academic_session = AcademicSessionModel.objects.get(pk=academic_session)
